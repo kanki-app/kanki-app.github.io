@@ -6,6 +6,15 @@
  */
 const CHANGELOG = [
   {
+    version: '1.1.8',
+    date: '2026-11-14',
+    title: 'Oyun odası: kıyafetli karakterler',
+    changed: [
+      'Odadaki karakterler artık kıyafetli, yürüyen ve el sallayan gerçek 3D insanlar (4 farklı model). Kıyafetin rengi ping rengin, profil fotoğrafın tişörtünün göğsünde. Karakterlerin kenarında odanın temasıyla uyumlu ince bir ışık var.',
+      'Modeller odayı ilk açışta bir kez yüklenir (yaklaşık 4,5 MB); o sırada eski karakterler görünür.',
+    ],
+  },
+  {
     version: '1.1.7',
     date: '2026-11-13',
     title: 'Oyun odası temaları',

@@ -65,6 +65,8 @@ function roomMount(el) {
     composer.addPass(bloomPass);
     Object.assign(room, { mounted: true, el, renderer, scene, camera, composer, bloomPass, view: { yaw: 0, pitch: 0.62, dist: 15 }, anim: [], t0: performance.now(), slow: { n: 0, ms: 0 } });
     roomBuild();
+    rmRim.value.set(roomTheme().neon[2]).multiplyScalar(0.7);
+    roomUseModels();
     roomControls();
     room.ro = new ResizeObserver(roomResize);
     room.ro.observe(el);
@@ -95,7 +97,7 @@ function roomUnmount() {
   room.el?.replaceChildren();
   room.chars.clear();
   room.tags = null;
-  Object.assign(room, { mounted: false, el: null, renderer: null, scene: null, camera: null, composer: null, bloomPass: null, raf: 0, fps: 0, bloom: false, ro: null, off: null, anim: [], tvVideo: null, tvTex: null, tvKey: null, tvList: [], tvBar: null, envRT: null, rv: null, bubbles: null, bar: null, emotes: null, pings: [], vac: null });
+  Object.assign(room, { mounted: false, el: null, renderer: null, scene: null, camera: null, composer: null, bloomPass: null, raf: 0, fps: 0, bloom: false, ro: null, off: null, anim: [], tvVideo: null, tvTex: null, tvKey: null, tvList: [], tvBar: null, envRT: null, rv: null, bubbles: null, bar: null, emotes: null, pings: [], vac: null, models: null, lastMembers: null });
 }
 
 function roomFail(why) {
@@ -848,6 +850,7 @@ function roomFaceTex(c, u) {
   c.face.material.map?.dispose();
   c.face.material.map = tex;
   c.face.material.needsUpdate = true;
+  if (c.photoU) c.photoU.uPhoto.value = tex;
   if (!photo) return;
   const img = new Image();
   img.onload = () => {
@@ -983,14 +986,37 @@ function roomMakeChar(u) {
   return { id: u.id, g, bodyM, glowM, legs, arms, head, facePiv, face, rim, ring, waves, zz, tag, phase: (rmHash(u.id) % 1000) / 160, speaking: false, debug: { speaking: false } };
 }
 
+function roomDropChar(id) {
+  const c = room.chars.get(id);
+  room.scene.remove(c.g);
+  c.mdl?.mixer.stopAllAction();
+  // Three.js sahneden çıkarınca GPU belleğini boşaltmaz; oda gün boyu açık kalırsa büyümesin
+  c.g.traverse((o) => {
+    if (o.userData.shared) {
+      if (o.material?.userData.own) o.material.dispose(); // modelin geometrisi ortak, sadece boyanan giysi bu kişinin
+      return;
+    }
+    o.geometry?.dispose();
+    if (o.material) {
+      if (o.material.map !== rmZ) o.material.map?.dispose(); // Z dokusu herkesin ortak
+      o.material.dispose();
+    }
+  });
+  c.tag.remove();
+  room.chars.delete(id);
+}
 function roomSync(members) {
   if (!room.mounted) return;
+  room.lastMembers = members;
   const seen = new Set();
   for (const u of members) {
     if (u.bot) continue;
     seen.add(u.id);
     let c = room.chars.get(u.id);
-    if (!c) room.chars.set(u.id, (c = roomMakeChar(u)));
+    if (!c) {
+      room.chars.set(u.id, (c = roomMakeChar(u)));
+      if (room.models) roomAttachModel(c, u);
+    }
     c.u = u;
     const body = roomBodyColor(u);
     c.bodyM.color.set(body);
@@ -1014,18 +1040,7 @@ function roomSync(members) {
     }
   }
   for (const [id, c] of room.chars) {
-    if (seen.has(id)) continue;
-    room.scene.remove(c.g);
-    // Three.js sahneden çıkarınca GPU belleğini boşaltmaz; oda gün boyu açık kalırsa büyümesin
-    c.g.traverse((o) => {
-      o.geometry?.dispose();
-      if (o.material) {
-        if (o.material.map !== rmZ) o.material.map?.dispose(); // Z dokusu herkesin ortak
-        o.material.dispose();
-      }
-    });
-    c.tag.remove();
-    room.chars.delete(id);
+    if (!seen.has(id)) roomDropChar(id);
   }
   const as = roomAssign(Math.floor(roomNow() / RM_SLOT));
   for (const [id, c] of room.chars) Object.assign(c.debug, { goal: as.get(id).goal, label: as.get(id).label });
@@ -1368,7 +1383,11 @@ function roomMove(c) {
   const text = p.arrived || a.goal === 'walk' ? label : '🚶 → ' + label;
   if (act.textContent !== text) act.textContent = text;
   const sit = p.arrived && (a.goal === 'tv' || a.goal === 'desk' || a.goal === 'puf');
-  if (!p.arrived) {
+  const em = room.emotes?.get(c.id);
+  const et = em ? t - em.at : -1;
+  c.debug.emote = et >= 0 && et < 4000 ? em.kind : null;
+  if (c.mdl) roomAnimModel(c, p, a, sit, t, et);
+  else if (!p.arrived) {
     c.g.rotation.y = roomLerpAngle(c.g.rotation.y, p.dir, 0.2);
     const sw = Math.sin(t * 0.012 + c.phase);
     c.legs[0].rotation.x = sw * 0.6;
@@ -1387,11 +1406,10 @@ function roomMove(c) {
     c.head.rotation.z = c.mode === 'idle' ? 0.45 : Math.sin(t * 0.001 + c.phase) * 0.05;
   }
   // el sallama / dans (4 sn, herkeste aynı an)
-  c.arms.forEach((arm) => (arm.rotation.z = 0));
-  const em = room.emotes?.get(c.id);
-  const et = em ? t - em.at : -1;
-  c.debug.emote = et >= 0 && et < 4000 ? em.kind : null;
-  if (c.debug.emote === 'wave') {
+  if (!c.mdl) c.arms.forEach((arm) => (arm.rotation.z = 0));
+  if (c.mdl) {
+    // modelli karakterde roomAnimModel yaptı
+  } else if (c.debug.emote === 'wave') {
     c.arms[1].rotation.x = 0;
     c.arms[1].rotation.z = 2.5 + Math.sin(et * 0.015) * 0.35;
   } else if (c.debug.emote === 'dance') {
@@ -1409,7 +1427,7 @@ function roomMove(c) {
   // konuşma halkası ve dalgalar
   const ring = c.ring.material;
   ring.opacity += ((c.speaking ? 0.55 + Math.sin(t * 0.02) * 0.3 : 0) - ring.opacity) * 0.25;
-  c.head.position.y = 1.95 + (c.speaking ? Math.abs(Math.sin(t * 0.025)) * 0.03 : 0);
+  if (!c.mdl) c.head.position.y = 1.95 + (c.speaking ? Math.abs(Math.sin(t * 0.025)) * 0.03 : 0);
   c.waves.forEach((w, k) => {
     const q = (t * 0.0009 + k / 3) % 1;
     w.scale.setScalar(1 + q * 1.6);
@@ -1421,6 +1439,232 @@ function roomMove(c) {
       z.position.set(0.3 + q * 0.5, 2.5 + q * 1.1, 0);
       z.material.opacity = Math.sin(q * Math.PI);
     });
+}
+
+// ---------- Kıyafetli karakter modelleri (Quaternius, CC0) ----------
+// İlk açılışta vendor/models/chars.js yüklenir (4,5 MB); hazır olana kadar kodla çizilen karakter görünür.
+const RM_MODELS = { hoodie: 'Purple', tshirt: 'LightBrown', casual: 'White', formal: 'LimeGreen' }; // model → ping rengine boyanan üst giysi
+const RM_SEAT = { tv: 0.72, desk: 0.8, puf: 0.66 };
+let rmModelsP = null;
+function roomModels() {
+  rmModelsP ||= new Promise((ok, no) => {
+    if (window.KANKI_CHARS) return ok();
+    const s = document.createElement('script');
+    s.src = 'vendor/models/chars.js';
+    s.onload = ok;
+    s.onerror = no;
+    document.head.append(s);
+  })
+    .then(() =>
+      Promise.all(
+        Object.keys(RM_MODELS).map(
+          (k) =>
+            new Promise((ok, no) => {
+              const bin = Uint8Array.from(atob(window.KANKI_CHARS[k]), (ch) => ch.charCodeAt(0));
+              new THREE.GLTFLoader().parse(
+                bin.buffer,
+                '',
+                (g) => {
+                  // köşeli (düz) gölgeyi yumuşat: aynı noktadaki köşeleri birleştirip normalleri yeniden hesapla
+                  g.scene.traverse((q) => {
+                    if (!q.isMesh) return;
+                    q.geometry.deleteAttribute('normal');
+                    q.geometry = THREE.BufferGeometryUtils.mergeVertices(q.geometry, 1e-3);
+                    q.geometry.computeVertexNormals();
+                  });
+                  ok([k, g]);
+                },
+                no
+              );
+            })
+        )
+      )
+    )
+    .then((list) => Object.fromEntries(list))
+    .catch((e) => {
+      console.warn('[kanki] oda modelleri yüklenemedi', e);
+      rmModelsP = null;
+      return null;
+    });
+  return rmModelsP;
+}
+// Modeller hazır olunca odadaki karakterleri modelli olarak yeniden kur
+function roomUseModels() {
+  roomModels().then((m) => {
+    if (!m || !room.mounted || room.models) return;
+    room.models = m;
+    for (const id of [...room.chars.keys()]) roomDropChar(id);
+    roomSync(room.lastMembers || []);
+  });
+}
+// Kodla çizilen karakterin gövdesini gizleyip yerine modeli koy (halka, dalgalar, Zzz, yüz diski kalır)
+function roomAttachModel(c, u) {
+  const keys = Object.keys(RM_MODELS);
+  const key = room.forceModel || keys[rmHash(u.id) % keys.length]; // forceModel: önizleme/test
+  const src = room.models[key];
+  const keep = new Set([c.ring, ...c.waves, ...c.zz]);
+  c.g.traverse((o) => {
+    if (!o.isMesh || keep.has(o)) return;
+    for (let q = o; q; q = q.parent) if (q === c.facePiv) return;
+    o.visible = false;
+  });
+  const o = THREE.SkeletonUtils.clone(src.scene);
+  const box = new THREE.Box3().setFromObject(o);
+  o.scale.setScalar(2.0 / (box.max.y - box.min.y));
+  o.updateMatrixWorld(true);
+  const bones = {};
+  const meshes = [];
+  o.traverse((q) => {
+    if (q.isBone) {
+      bones[q.name] = q;
+      q.userData.rest = q.quaternion.clone();
+    }
+    if (q.isMesh) meshes.push(q);
+  });
+  const shirtMode = room.photoMode !== 'head';
+  // üst giysi: o malzemenin gövde hizasındaki parçaları (aynı malzemeli saç ve ayakkabı hariç)
+  const hipY = bones.Hips.getWorldPosition(rmV).y, neckY = bones.Neck.getWorldPosition(rmV).y;
+  const isTop = (q) => {
+    const bb = new THREE.Box3().setFromObject(q);
+    return bb.max.y > hipY && bb.min.y < neckY - 0.05; // ayakkabı kalçanın altında, saç boynun üstünde
+  };
+  let shirtM = null;
+  for (const q of meshes) {
+    q.castShadow = true;
+    q.frustumCulled = false;
+    q.userData.shared = true; // geometri modeller arasında ortak: karakter çıkınca silinmesin
+    const k = q.getWorldScale(rmV).x; // doku sıklığı dünya ölçüsünde aynı olsun
+    const name = q.material.name;
+    const kind = /Skin/.test(name) ? 'skin' : /Eye|Hair|Brow/.test(name) ? '' : 'cloth';
+    if (name === RM_MODELS[key] && isTop(q)) {
+      if (!shirtM) {
+        shirtM = q.material.clone();
+        shirtM.userData.own = true;
+        let photo = null;
+        if (shirtMode) {
+          // göğsün ortası ve yönler bu parçanın kendi koordinatında
+          const inv = new THREE.Matrix4().copy(q.matrixWorld).invert();
+          const ch = (bones.Chest || bones.Torso).getWorldPosition(new THREE.Vector3());
+          ch.y += 0.03;
+          const dir = (x, y, z) => new THREE.Vector3(x, y, z).transformDirection(inv);
+          photo = { uPhoto: { value: c.face.material.map }, uC: { value: ch.applyMatrix4(inv) }, uR: { value: dir(1, 0, 0) }, uU: { value: dir(0, 1, 0) }, uF: { value: dir(0, 0, 1) }, uRad: { value: 0.15 / k } };
+          c.photoU = photo;
+        }
+        rmShade(shirtM, 'cloth', k, photo);
+        c.bodyM = shirtM;
+      }
+      q.material = shirtM;
+    } else if (!q.material.userData.shaded) {
+      q.material.userData.shaded = true;
+      rmShade(q.material, kind, k);
+    }
+  }
+  c.facePiv.visible = !shirtMode;
+  c.g.add(o);
+  const mixer = new THREE.AnimationMixer(o);
+  const act = Object.fromEntries(src.animations.map((a) => [a.name, mixer.clipAction(a)]));
+  act.Idle.play();
+  const hip = bones.Hips.getWorldPosition(new THREE.Vector3()).y;
+  c.mdl = { key, o, mixer, act, cur: 'Idle', bones, hip, t: 0 };
+  c.facePiv.scale.setScalar(0.45);
+  c.facePiv.position.set(0, 0, 0);
+  c.debug.model = key;
+}
+
+// Model ayrıntısı: kumaş/ten dokusu, temanın renginde kenar ışığı, istenirse tişörtte profil fotoğrafı.
+// vBind: iskeletin dinlenme pozundaki konum (doku vücutla birlikte hareket eder)
+const rmRim = { value: new THREE.Color(0x8a6bff) };
+function rmShade(mat, kind, k, photo) {
+  mat.flatShading = false;
+  mat.onBeforeCompile = (s) => {
+    s.uniforms.uRim = rmRim;
+    s.uniforms.uK = { value: k };
+    if (photo) Object.assign(s.uniforms, photo);
+    s.vertexShader = 'varying vec3 vBind;\nvarying vec3 vBindN;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvBind = position;\nvBindN = normal;');
+    s.fragmentShader =
+      'varying vec3 vBind;\nvarying vec3 vBindN;\nuniform vec3 uRim;\nuniform float uK;\n' +
+      (photo ? 'uniform sampler2D uPhoto;\nuniform vec3 uC;\nuniform vec3 uR;\nuniform vec3 uU;\nuniform vec3 uF;\nuniform float uRad;\n' : '') +
+      'float rmN(vec3 p){ vec3 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); float n = dot(i, vec3(1.0, 57.0, 113.0));\n' +
+      ' vec4 a = fract(sin(vec4(n, n+1.0, n+57.0, n+58.0)) * 43758.5); vec4 b = fract(sin(vec4(n+113.0, n+114.0, n+170.0, n+171.0)) * 43758.5);\n' +
+      ' vec4 m = mix(a, b, f.z); vec2 q = mix(m.xy, m.zw, f.y); return mix(q.x, q.y, f.x); }\n' +
+      s.fragmentShader
+        .replace(
+          '#include <map_fragment>',
+          '#include <map_fragment>\n' +
+            (kind === 'skin'
+              ? 'diffuseColor.rgb *= 0.95 + 0.07 * rmN(vBind * uK * 18.0);\n'
+              : kind === 'cloth'
+              ? 'float wv = 0.5 + 0.5 * sin(vBind.x * uK * 260.0) * sin(vBind.y * uK * 260.0);\n' +
+                'diffuseColor.rgb *= 0.86 + 0.1 * rmN(vBind * uK * 22.0) + 0.06 * wv;\n'
+              : '') +
+            (photo
+              ? 'vec3 rel = vBind - uC; float pu = dot(rel, uR) / uRad, pv = dot(rel, uU) / uRad, pr = pu*pu + pv*pv;\n' +
+                'if (dot(normalize(vBindN), uF) > 0.3 && dot(rel, uF) > 0.0 && pr < 1.0) {\n' +
+                '  vec4 ph = sRGBToLinear(texture2D(uPhoto, vec2(pu, pv) * 0.5 + 0.5));\n' +
+                '  diffuseColor.rgb = pr > 0.86 ? vec3(0.92) : ph.rgb;\n}\n'
+              : '')
+        )
+        .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += uRim * pow(1.0 - clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), 3.0) * 0.35;');
+  };
+  mat.customProgramCacheKey = () => 'rm:' + kind + (photo ? ':photo' : ''); // onBeforeCompile hepsinde aynı metin: ayrı derlensin
+  mat.needsUpdate = true;
+}
+const rmQa = new THREE.Quaternion(), rmQb = new THREE.Quaternion(), rmV = new THREE.Vector3();
+const RM_X = new THREE.Vector3(1, 0, 0), RM_Z = new THREE.Vector3(0, 0, 1);
+// Kemiği karakterin kendi ekseni etrafında döndür (RM_X: yan, RM_Z: ileri); rest: dinlenme pozundan başla
+function rmTurn(c, bone, axis, ang, rest) {
+  if (rest) bone.quaternion.copy(bone.userData.rest);
+  bone.updateWorldMatrix(true, false);
+  bone.getWorldQuaternion(rmQa);
+  c.g.getWorldQuaternion(rmQb);
+  rmV.copy(axis).applyQuaternion(rmQb).applyQuaternion(rmQa.invert());
+  bone.quaternion.multiply(rmQb.setFromAxisAngle(rmV, ang));
+}
+// Modelli karakterin hareketi: animasyon (bekle / yürü / el salla) + kemikle oturma, oynama, dans
+function roomAnimModel(c, p, a, sit, t, et) {
+  const m = c.mdl, pos = c.g.position, b = m.bones;
+  const dt = m.t ? Math.min(0.1, Math.max(0, (t - m.t) / 1000)) : 0;
+  m.t = t;
+  const emo = c.debug.emote;
+  const seated = sit || p.seated;
+  const want = emo === 'wave' && !seated ? 'Wave' : !p.arrived && !p.seated ? 'Walk' : 'Idle';
+  if (m.cur !== want) {
+    m.act[want].reset().fadeIn(0.25).play();
+    m.act[m.cur].fadeOut(0.25);
+    m.cur = want;
+  }
+  m.mixer.update(dt);
+  if (!p.arrived) c.g.rotation.y = roomLerpAngle(c.g.rotation.y, p.dir, 0.2);
+  else {
+    const [fx, fz] = RM_FACE[a.goal] || [null, null];
+    if (fx !== null || fz !== null) c.g.rotation.y = roomLerpAngle(c.g.rotation.y, Math.atan2((fx ?? p.x) - p.x, (fz ?? p.z) - p.z), 0.15);
+  }
+  pos.y = 0;
+  if (seated) {
+    for (const s of ['L', 'R']) {
+      rmTurn(c, b['UpperLeg' + s], RM_X, -Math.PI / 2, true);
+      rmTurn(c, b['LowerLeg' + s], RM_X, Math.PI / 2, true);
+    }
+    pos.y = (RM_SEAT[a.goal] ?? 0.72) + 0.06 - m.hip;
+  }
+  const play = p.arrived && (a.goal === 'arcade' || a.goal === 'foos' || a.goal === 'desk');
+  if (play && emo !== 'wave') ['L', 'R'].forEach((s, j) => rmTurn(c, b['UpperArm' + s], RM_X, -1.15 + Math.sin(t * 0.02 + j * 2) * 0.1, false));
+  if (emo === 'wave' && seated) rmTurn(c, b.UpperArmR, RM_Z, -2.5 - Math.sin(et * 0.015) * 0.3, false);
+  if (emo === 'dance') {
+    const k = et * 0.011;
+    rmTurn(c, b.UpperArmL, RM_Z, 2.3 + Math.sin(k) * 0.5, false);
+    rmTurn(c, b.UpperArmR, RM_Z, -2.3 + Math.sin(k) * 0.5, false);
+    if (!seated) {
+      pos.y += Math.abs(Math.sin(k)) * 0.15;
+      c.g.rotation.y += Math.sin(k * 0.5) * 0.06;
+    }
+  }
+  if (!p.arrived && !p.seated) m.act.Walk.timeScale = 1.6; // yürüme hızına uysun
+  // yüz diski kafayı izler
+  c.g.updateMatrixWorld(true);
+  b.Head.getWorldPosition(rmTmp);
+  c.g.worldToLocal(rmTmp);
+  c.head.position.set(rmTmp.x, rmTmp.y + 0.02, rmTmp.z);
 }
 
 // ---------- Robot süpürge: 5 dakikada bir ~1 dakika temizler, sonra istasyonuna döner ----------
