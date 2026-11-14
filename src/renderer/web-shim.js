@@ -10,6 +10,42 @@
   const mobile = matchMedia('(pointer: coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if (mobile) root.classList.add('web-mobile');
   const canShare = !!navigator.mediaDevices?.getDisplayMedia && !mobile;
+
+  // Ana ekrana ekle: telefonda, uygulama gibi açılmamışsa bir kez öner (Android'de tek dokunuş, iPhone'da Safari menüsü)
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const tipSeen = () => {
+    try {
+      return !!localStorage.getItem('kanki-home-tip');
+    } catch {
+      return false;
+    }
+  };
+  function homeTip(install) {
+    if (!mobile || standalone || tipSeen() || document.querySelector('.web-home')) return;
+    const box = document.getElementById('toasts');
+    if (!box) return document.addEventListener('DOMContentLoaded', () => homeTip(install), { once: true });
+    const el = document.createElement('div');
+    el.className = 'toast web-home';
+    el.innerHTML =
+      "<button class=\"web-home-x\" aria-label=\"Kapat\">✕</button><b>Kanki'yi ana ekrana ekle</b>" +
+      (install ? '<span>Uygulama gibi tek dokunuşla açılsın.</span><button class="btn primary web-home-ok">Yükle</button>' : '<span>Safari\'de Paylaş <b>⬆︎</b> → <b>Ana Ekrana Ekle</b></span>');
+    el.onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.classList.contains('web-home-ok')) install.prompt().catch(() => {});
+      try {
+        localStorage.setItem('kanki-home-tip', '1');
+      } catch {}
+      el.remove();
+    };
+    box.append(el);
+  }
+  addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); // Chrome'un kendi çubuğu yerine bizim ipucumuz
+    homeTip(e);
+  });
+  if (ios) setTimeout(() => homeTip(null), 4000);
   if (!canShare) root.classList.add('web-noshare');
   const version = document.querySelector('meta[name="kanki-version"]')?.content || '';
   const noop = () => {};

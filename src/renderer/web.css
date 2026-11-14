@@ -85,3 +85,9 @@ html.web #m-nav { display: none; }
   /* Bağlan ekranı */
   html.web #connect-screen .connect-card, html.web #connect-screen .card { width: calc(100vw - 24px); max-width: 420px; }
 }
+
+/* Ana ekrana ekle ipucu (telefonda bir kez) */
+.web-home { position: relative; display: flex; flex-direction: column; gap: 6px; padding-right: 34px; }
+.web-home span { color: var(--text-2); font-size: 13px; }
+.web-home .web-home-ok { align-self: flex-start; }
+.web-home-x { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; border: 0; border-radius: 6px; background: none; color: var(--text-2); cursor: pointer; }
