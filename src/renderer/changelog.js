@@ -6,6 +6,12 @@
  */
 const CHANGELOG = [
   {
+    version: '1.1.9',
+    date: '2026-11-15',
+    title: 'Tarayıcıdan katılma daha hafif',
+    changed: ['Tarayıcıdan (telefondan) katılanlar ilk girişte yaklaşık 1,7 MB yerine 0,23 MB indiriyor; sonraki girişlerde sadece değişen dosyalar iniyor. Oyun odası tarayıcıda zaten açılmıyordu, artık dosyaları da inmiyor.'],
+  },
+  {
     version: '1.1.8',
     date: '2026-11-15',
     title: 'Oyun odası: kıyafetli karakterler',

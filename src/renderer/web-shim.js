@@ -14,6 +14,8 @@
   const version = document.querySelector('meta[name="kanki-version"]')?.content || '';
   const noop = () => {};
   const anoop = async () => {};
+  // Oyun odası webde yok: sunucu room.js ve three.js'i sayfadan çıkarır, app.js'in çağırdıkları boş kalsın
+  Object.assign(window, { roomSupported: () => false, roomActive: () => false, roomSpeaking: noop, roomTv: noop, roomUnmount: noop });
 
   // Son klavye/fare/dokunma zamanı (otomatik "Boşta" ve AFK için)
   let lastInput = Date.now();

@@ -173,7 +173,7 @@ Sunucu Ayarları › Bağlantı'dan "Tarayıcıdan ve telefondan katılma" açı
 - Çalışanlar: ses, yazışma, dosya, GIF, anket/çark, ses efektleri, müzik botu, yayın izleme. Bilgisayar tarayıcısından ekran paylaşımı da olur.
 - Olmayanlar: telefonda ekran paylaşımı, oyun/Spotify gösterimi, oyun içi katman, genel kısayollar, YouTube ile birlikte izle başlatma.
 - Mobil veride ses bağlanmazsa: Sunucu Ayarları › Bağlantı'ya bir TURN sunucusu (ör. metered.ca ücretsiz hesap) yazılır.
-- Sunucu sadece `src/renderer` içindeki arayüz dosyalarını verir (klasör dışına çıkılamaz); tarayıcı katmanı `web-shim.js` ve `web.css`.
+- Sunucu sadece `src/renderer` içindeki arayüz dosyalarını verir (klasör dışına çıkılamaz); tarayıcı katmanı `web-shim.js` ve `web.css`. Dosyalar gzip ile ve içerikten ETag ile gider (aynısı varsa 304; sıkıştırılmış hali bellekte, dosya değişince yenilenir). Oyun odası webde kapalı olduğundan sayfadan `vendor/three/*` ve `room.js` çıkarılır, `web-shim.js` app.js'in çağırdığı oda fonksiyonlarını boş tanımlar (1.1.9). Ölçüm: ilk giriş 1,69 MB → 0,23 MB, tekrar giriş ~5 KB.
 
 ## Görünüm ve temalar
 Ayarlar › Görünüm: 9 tema (Sade — efektsiz ve en hafif, Kanki, Zifiri, Gece Mavisi, Neon, Gün Batımı, Okyanus, Şampiyon, Gündüz), vurgu rengi, bilgisayarın açık/koyu temasına uyma, cam efekti, arka plan ışıkları, konuşurken parlama, hareketleri azaltma, yüzen/bitişik paneller, yoğunluk ve sohbet yazı boyutu. Bu ayarlar sadece o bilgisayarda geçerli. Uygulamanın ne kadar bellek kullandığı Ayarlar › Hakkında'da görünür; en az bellek için Sade tema.

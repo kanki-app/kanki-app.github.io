@@ -28,6 +28,7 @@ const net = require('net');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 const { WebSocketServer } = require('ws');
 
 const DEFAULT_CHANNELS = [
@@ -958,6 +959,8 @@ function startServer(opts = {}) {
       '  <link rel="stylesheet" href="web.css" />\n' +
       '  <script src="web-shim.js"></script>\n  ';
     html = html.replace('<script src="theme-boot.js"></script>', head + '<script src="theme-boot.js"></script>');
+    // Oyun odası webde kapalı (room.js roomSupported): 3D kütüphanesi ve oda kodu telefona boşuna inmesin
+    html = html.replace(/^\s*<script src="(vendor\/three\/[^"]+|room\.js)"><\/script>\n/gm, '');
     return (webIndex = html);
   }
   function serveWeb(req, res, pathname) {
@@ -974,22 +977,45 @@ function startServer(opts = {}) {
     if (!type) return false;
     const file = path.join(WEB_ROOT, rel);
     if (!file.startsWith(WEB_ROOT + path.sep)) return false;
-    let body;
+    let f;
     try {
-      body = rel === 'index.html' ? Buffer.from(webIndexHtml()) : fs.readFileSync(file);
+      f = webFile(rel, file, ext);
     } catch {
       return false;
     }
-    res.writeHead(200, {
+    const hdr = {
       'Content-Type': type,
-      'Content-Length': body.length,
       'Cache-Control': rel === 'index.html' || ext === '.js' || ext === '.css' ? 'no-cache' : 'max-age=86400',
+      ETag: f.etag,
+      Vary: 'Accept-Encoding',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'no-referrer',
       ...(rel === 'index.html' ? { 'X-Frame-Options': 'DENY' } : {}),
-    });
+    };
+    // Tarayıcıda aynısı var: sadece "değişmedi" de (no-cache dosyalar her girişte böyle sorulur)
+    if (req.headers['if-none-match'] === f.etag) {
+      res.writeHead(304, hdr);
+      res.end();
+      return true;
+    }
+    const gz = f.gz && /\bgzip\b/.test(req.headers['accept-encoding'] || '');
+    const body = gz ? f.gz : f.body;
+    res.writeHead(200, { ...hdr, 'Content-Length': body.length, ...(gz ? { 'Content-Encoding': 'gzip' } : {}) });
     res.end(req.method === 'HEAD' ? undefined : body);
     return true;
+  }
+  // Web dosyaları: içerik + parmak izi + sıkıştırılmış hali bellekte; dosya değişince (boyut/zaman) yeniden okunur
+  const webCache = new Map();
+  function webFile(rel, file, ext) {
+    const st = rel === 'index.html' ? null : fs.statSync(file);
+    const stamp = st ? st.size + ':' + st.mtimeMs : 'index';
+    let f = webCache.get(rel);
+    if (f && f.stamp === stamp) return f;
+    const body = rel === 'index.html' ? Buffer.from(webIndexHtml()) : fs.readFileSync(file);
+    const etag = '"' + crypto.createHash('sha1').update(body).digest('base64url').slice(0, 20) + '"';
+    const gz = ['.png', '.ico', '.woff2', '.woff'].includes(ext) ? null : zlib.gzipSync(body, { level: 9 });
+    webCache.set(rel, (f = { stamp, body, etag, gz: gz && gz.length < body.length ? gz : null }));
+    return f;
   }
 
   function handleHttp(req, res) {
