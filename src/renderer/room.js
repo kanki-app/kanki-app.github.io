@@ -37,11 +37,13 @@ function roomMount(el) {
     room.tags.className = 'rm-tags';
     room.bar = el.appendChild(document.createElement('div'));
     room.bar.className = 'rm-bar';
-    room.bar.innerHTML = '<button data-e="wave" title="El salla">👋</button><button data-e="dance" title="Dans et">💃</button><button class="rm-auto" hidden title="Karakterin kendi gezsin">🤖 Otomatik</button>';
+    room.bar.innerHTML = '<button data-e="wave" title="El salla">👋</button><button data-e="dance" title="Dans et">💃</button><button class="rm-char-btn" title="Karakterini seç">👕</button><button class="rm-auto" hidden title="Karakterin kendi gezsin">🤖 Otomatik</button>';
     room.bar.onclick = (e) => {
       const b = e.target.closest('button');
       if (!b) return;
-      if (b.dataset.e) send({ t: 'room', kind: 'emote', emote: b.dataset.e });
+      if (b.classList.contains('rm-char-btn'))
+        showCtx(e, [[null, '🎲 Otomatik'], ...Object.entries(RM_NAMES)].map(([k, n]) => ({ label: ((settings.roomChar || null) === k ? '✓ ' : '') + n, run: () => roomPickChar(k) })));
+      else if (b.dataset.e) send({ t: 'room', kind: 'emote', emote: b.dataset.e });
       else {
         send({ t: 'room', kind: 'auto' });
         b.hidden = true;
@@ -1013,6 +1015,10 @@ function roomSync(members) {
     if (u.bot) continue;
     seen.add(u.id);
     let c = room.chars.get(u.id);
+    if (c?.mdl && c.mdl.key !== rmCharKey(u)) {
+      roomDropChar(u.id); // karakter seçimi değişti: yeniden kur
+      c = null;
+    }
     if (!c) {
       room.chars.set(u.id, (c = roomMakeChar(u)));
       if (room.models) roomAttachModel(c, u);
@@ -1444,6 +1450,14 @@ function roomMove(c) {
 // ---------- Kıyafetli karakter modelleri (Quaternius, CC0) ----------
 // İlk açılışta vendor/models/chars.js yüklenir (4,5 MB); hazır olana kadar kodla çizilen karakter görünür.
 const RM_MODELS = { hoodie: 'Purple', tshirt: 'LightBrown', casual: 'White', formal: 'LimeGreen' }; // model → ping rengine boyanan üst giysi
+const RM_NAMES = { hoodie: 'Kapüşonlu erkek', tshirt: 'Tişörtlü erkek', casual: 'Gündelik kadın', formal: 'Elbiseli kadın' };
+// Kişi kendi karakterini seçer (null = hesaptan otomatik); sunucu herkese iletir
+function roomPickChar(k) {
+  settings.roomChar = RM_MODELS[k] ? k : null;
+  saveSettings();
+  send({ t: 'profile', roomChar: settings.roomChar });
+}
+const rmCharKey = (u) => room.forceModel || (RM_MODELS[u.roomChar] ? u.roomChar : Object.keys(RM_MODELS)[rmHash(u.id) % 4]); // forceModel: önizleme/test
 const RM_SEAT = { tv: 0.72, desk: 0.8, puf: 0.66 };
 let rmModelsP = null;
 function roomModels() {
@@ -1499,8 +1513,7 @@ function roomUseModels() {
 }
 // Kodla çizilen karakterin gövdesini gizleyip yerine modeli koy (halka, dalgalar, Zzz, yüz diski kalır)
 function roomAttachModel(c, u) {
-  const keys = Object.keys(RM_MODELS);
-  const key = room.forceModel || keys[rmHash(u.id) % keys.length]; // forceModel: önizleme/test
+  const key = rmCharKey(u);
   const src = room.models[key];
   const keep = new Set([c.ring, ...c.waves, ...c.zz]);
   c.g.traverse((o) => {

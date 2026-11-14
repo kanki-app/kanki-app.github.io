@@ -96,6 +96,7 @@ const DEFAULT_SETTINGS = {
   presence: 'online', // online | idle | dnd (kullanıcının seçtiği)
   statusText: '', // özel durum yazısı (ör. "🎮 Valorant")
   nameStyle: null, // isim stili: { font, effect, c1, c2, inMessages }
+  roomChar: null, // oyun odası karakteri (hoodie/tshirt/casual/formal), boş = otomatik
   avatar: null, // profil fotoğrafı (küçük data URL)
   cameraId: 'default',
   chatHidden: false,
@@ -1845,6 +1846,7 @@ function connect(url, password) {
           presence: effectivePresence(),
           statusText: settings.statusText || '',
           nameStyle: settings.nameStyle || undefined,
+          roomChar: settings.roomChar || undefined,
           avatar: settings.avatar || undefined,
           clientKey: CLIENT_KEY,
           caps: kanki.xferPick ? ['xfer'] : [], // doğrudan dosya alabilir (xfer.js)

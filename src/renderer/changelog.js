@@ -11,6 +11,7 @@ const CHANGELOG = [
     title: 'Oyun odası: kıyafetli karakterler',
     changed: [
       'Odadaki karakterler artık kıyafetli, yürüyen ve el sallayan gerçek 3D insanlar (4 farklı model). Kıyafetin rengi ping rengin, profil fotoğrafın tişörtünün göğsünde. Karakterlerin kenarında odanın temasıyla uyumlu ince bir ışık var.',
+      'Odada sol alttaki 👕 ile karakterini kendin seç (Kapüşonlu erkek, Tişörtlü erkek, Gündelik kadın, Elbiseli kadın) ya da Otomatik bırak; herkes seçtiğin karakteri görür.',
       'Modeller odayı ilk açışta bir kez yüklenir (yaklaşık 4,5 MB); o sırada eski karakterler görünür.',
     ],
   },

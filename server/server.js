@@ -249,8 +249,12 @@ function startServer(opts = {}) {
     pingColor: pingColorOf(u),
     xfer: !!u.xfer,
     room: u.room || null,
+    roomChar: u.roomChar || null,
   });
   // Ping ve yayına çizim rengi: yetkilinin kişiye seçtiği renk, seçilmediyse beyaz
+  // Oyun odası karakteri: kişinin kendi seçimi, yalnızca bilinen modeller (boş = otomatik)
+  const ROOM_CHARS = ['hoodie', 'tshirt', 'casual', 'formal'];
+  const cleanRoomChar = (v) => (ROOM_CHARS.includes(v) ? v : null);
   const pingColorOf = (u) => (u && !u.bot && memberOf(u.clientKey)?.pingColor) || '#ffffff';
   const findBot = () => [...users.values()].find((u) => u.bot);
   // Sadece botun anladığı komutlar iletilir ("!!!" gibi mesajlar bota gitmesin)
@@ -1222,6 +1226,7 @@ function startServer(opts = {}) {
           presence: ['online', 'idle', 'dnd'].includes(m.presence) ? m.presence : 'online',
           statusText: cleanStatus(m.statusText),
           nameStyle: cleanNameStyle(m.nameStyle),
+          roomChar: cleanRoomChar(m.roomChar),
           avatar: isImageData(m.avatar, AVATAR_MAX) ? m.avatar : null,
           clientKey: String(m.clientKey || '').slice(0, 64) || crypto.randomUUID(), // mesaj düzenleme/silme yetkisi için
           admin: isAdmin,
@@ -1545,6 +1550,7 @@ function startServer(opts = {}) {
           // Profil fotoğrafı ve özel durum yazısı
           if ('statusText' in m) me.statusText = cleanStatus(m.statusText);
           if ('nameStyle' in m) me.nameStyle = cleanNameStyle(m.nameStyle);
+          if ('roomChar' in m) me.roomChar = cleanRoomChar(m.roomChar);
           if ('avatar' in m) {
             const next = isImageData(m.avatar, AVATAR_MAX) ? m.avatar : null;
             if (next !== me.avatar) {
