@@ -168,7 +168,7 @@ GitHub Actions paketleri derler, Release'e `latest.yml` ile birlikte ekler; kuru
 - **Ping rengi:** Ping ve yayına çizim herkeste başta beyaz. "Rolleri yönet" yetkisi olan kişi (kendisine ve kendinden alttakilere) Sunucu Ayarları › Üyeler'de adın yanındaki renk noktasından ya da kişiye sağ tık › 📍 Ping rengi'nden renk seçer, "Beyaza döndür" ile sıfırlar. Renk sunucuda kişinin cihaz anahtarıyla saklanır (çevrimdışıyken de kalır), denetim kaydına yazılır ve ping/işaret mesajıyla birlikte gider. Halkaların ince koyu kenarı beyazın açık ekranda da seçilmesini sağlar.
 
 ## Tarayıcıdan ve telefondan katılma
-Sunucu Ayarları › Bağlantı'dan "Tarayıcıdan ve telefondan katılma" açılınca (başta kapalı) Kanki Admin'in internet adresi (ngrok, ör. `https://isim.ngrok-free.dev`) tarayıcıda Kanki'nin web halini açar; kurulum gerekmez. Her sayfa açılışı yaklaşık 0,7 MB ngrok kotası harcar. ngrok ilk açılışta bir uyarı sayfası gösterir, "Visit Site"a basılır.
+Sunucu Ayarları › Bağlantı'dan "Tarayıcıdan ve telefondan katılma" açılınca (başta kapalı) Kanki Admin'in internet adresi (ngrok, ör. `https://isim.ngrok-free.dev`) tarayıcıda Kanki'nin web halini açar; kurulum gerekmez. İlk açılış yaklaşık 0,23 MB, sonraki açılışlar ~5 KB ngrok kotası harcar (1.1.9); her açılış ~17 istek sayılır. ngrok ilk açılışta bir uyarı sayfası gösterir, "Visit Site"a basılır.
 - Telefonda tek panel ve alt sekmeler (Kanallar / Sahne / Sohbet). Paylaş › Ana ekrana ekle ile uygulama gibi açılır.
 - Çalışanlar: ses, yazışma, dosya, GIF, anket/çark, ses efektleri, müzik botu, yayın izleme. Bilgisayar tarayıcısından ekran paylaşımı da olur.
 - Olmayanlar: telefonda ekran paylaşımı, oyun/Spotify gösterimi, oyun içi katman, genel kısayollar, YouTube ile birlikte izle başlatma.
