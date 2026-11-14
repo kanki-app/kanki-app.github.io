@@ -961,6 +961,15 @@ function startServer(opts = {}) {
     html = html.replace('<script src="theme-boot.js"></script>', head + '<script src="theme-boot.js"></script>');
     // Oyun odası webde kapalı (room.js roomSupported): 3D kütüphanesi ve oda kodu telefona boşuna inmesin
     html = html.replace(/^\s*<script src="(vendor\/three\/[^"]+|room\.js)"><\/script>\n/gm, '');
+    // Adreslere içerikten parmak izi: tarayıcı sonraki açılışlarda bunları hiç sormaz (ngrok istek kotası), dosya değişince adres de değişir
+    // shortcut: parmak izi sayfa ilk istendiğinde hesaplanır; sunucu çalışırken dosya değişirse yeniden başlatınca yansır
+    html = html.replace(/(<script src="|<link rel="stylesheet" href=")([\w\-./]+\.(?:js|css))"/g, (m, a, rel) => {
+      try {
+        return `${a}${rel}?v=${webFile(rel, path.join(WEB_ROOT, rel), path.extname(rel)).etag.slice(1, 11)}"`;
+      } catch {
+        return m;
+      }
+    });
     return (webIndex = html);
   }
   function serveWeb(req, res, pathname) {
@@ -985,7 +994,7 @@ function startServer(opts = {}) {
     }
     const hdr = {
       'Content-Type': type,
-      'Cache-Control': rel === 'index.html' || ext === '.js' || ext === '.css' ? 'no-cache' : 'max-age=86400',
+      'Cache-Control': /[?&]v=/.test(req.url) && (ext === '.js' || ext === '.css') ? 'public, max-age=31536000, immutable' : rel === 'index.html' || ext === '.js' || ext === '.css' ? 'no-cache' : 'max-age=86400',
       ETag: f.etag,
       Vary: 'Accept-Encoding',
       'X-Content-Type-Options': 'nosniff',

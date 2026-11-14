@@ -9,7 +9,7 @@ const CHANGELOG = [
     version: '1.1.9',
     date: '2026-11-15',
     title: 'Tarayıcıdan katılma daha hafif',
-    changed: ['Tarayıcıdan (telefondan) katılanlar ilk girişte yaklaşık 1,7 MB yerine 0,23 MB indiriyor; sonraki girişlerde sadece değişen dosyalar iniyor. Oyun odası tarayıcıda zaten açılmıyordu, artık dosyaları da inmiyor.'],
+    changed: ['Tarayıcıdan (telefondan) katılanlar ilk girişte yaklaşık 1,7 MB yerine 0,23 MB indiriyor; sonraki girişlerde sunucuya sadece tek bir istek gidiyor, yeni sürümde değişen dosyalar iniyor. Oyun odası tarayıcıda zaten açılmıyordu, artık dosyaları da inmiyor.'],
     added: ["Telefondan tarayıcıyla girenlere bir kez 'Kanki'yi ana ekrana ekle' ipucu çıkar: Android'de tek dokunuşla yüklenir, iPhone'da Safari'de Paylaş → Ana Ekrana Ekle. Ana ekrandan Kanki uygulama gibi tam ekran açılır."],
   },
   {
