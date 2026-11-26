@@ -3,30 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kanki — Sesli sohbet ve ekran paylaşımı</title>
-  <meta name="description" content="Arkadaşlarınla kanal kanal konuş, ekranını 4K 60 FPS'e kadar paylaş. Windows ve macOS için ücretsiz." />
-  <meta property="og:title" content="Kanki — Sesli sohbet ve ekran paylaşımı" />
-  <meta property="og:description" content="Arkadaşlarınla konuş, ekranını paylaş. Windows ve macOS için ücretsiz." />
-  <meta property="og:image" content="screenshot.jpg" />
+  <title>Kanki — Sesli sohbet, ekran paylaşımı ve oyun odası</title>
+  <meta name="description" content="Arkadaşlarınla kanal kanal konuş, ekranını 4K 60 FPS'e kadar paylaş, 3D oyun odasında takıl. Windows ve macOS için ücretsiz, telefondan tarayıcıyla da katılabilirsin." />
+  <meta property="og:title" content="Kanki — Arkadaşlarınla konuş, oyna, takıl" />
+  <meta property="og:description" content="Sesli sohbet, ekran paylaşımı, müzik botu ve 3D oyun odası. Windows ve macOS için ücretsiz." />
+  <meta property="og:image" content="app.jpg" />
+  <meta name="theme-color" content="#050607" />
   <meta name="color-scheme" content="dark" />
   <link rel="icon" href="favicon.png" />
   <style>
     :root {
-      --bg: #0d0f13;
-      --bg-1: #13161c;
-      --bg-2: #1a1e26;
-      --bg-3: #232937;
-      --line: #262c38;
-      --text: #e9ecf2;
-      --text-2: #a9b1bf;
-      --text-3: #737d8f;
-      --accent: #4c8dff;
-      --accent-2: #3a76e6;
-      --violet: #7b6cff;
-      --green: #35c46a;
+      --bg: #050607;
+      --bg-1: #0b0d0e;
+      --bg-2: #111517;
+      --bg-3: #181e20;
+      --line: #1c2427;
+      --line-2: #26312f;
+      --text: #e6efea;
+      --text-2: #a3b1aa;
+      --text-3: #6e7c76;
+      --accent: #22d47e;
+      --accent-2: #1bb86b;
+      --accent-soft: rgba(34, 212, 126, .12);
+      --teal: #2fd3c5;
+      --pink: #ff4fa3;
+      --violet: #9b6bff;
       --amber: #f2b33d;
-      --red: #f0524f;
-      --radius: 14px;
+      --radius: 16px;
       --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
       --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     }
@@ -34,81 +37,190 @@
     html { scroll-behavior: smooth; }
     body {
       margin: 0; background: var(--bg); color: var(--text);
-      font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased;
+      font: 16px/1.6 var(--font); -webkit-font-smoothing: antialiased; overflow-x: hidden;
     }
-    a { color: #8db6ff; }
-    img { max-width: 100%; display: block; }
+    /* uygulamadaki gibi ince nokta ızgarası */
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, .045) 1px, transparent 1px);
+      background-size: 22px 22px;
+      mask-image: linear-gradient(to bottom, #000 0, rgba(0, 0, 0, .35) 60%, transparent 100%);
+    }
+    a { color: #6fe3a6; }
+    img { max-width: 100%; height: auto; display: block; }
     svg { width: 20px; height: 20px; fill: currentColor; flex: none; }
-    .wrap { width: min(1120px, 100% - 32px); margin: 0 auto; }
+    .wrap { width: min(1160px, 100% - 32px); margin: 0 auto; }
     .muted { color: var(--text-3); }
+    code { font-family: var(--mono); font-size: .92em; }
 
     /* ---------- Üst bar ---------- */
     header.top {
-      position: sticky; top: 0; z-index: 10;
-      background: rgba(13, 15, 19, .82); backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--line);
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(5, 6, 7, .72); backdrop-filter: blur(14px) saturate(1.3); -webkit-backdrop-filter: blur(14px) saturate(1.3);
+      border-bottom: 1px solid rgba(255, 255, 255, .05);
     }
     .top .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
-    .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; color: var(--text); text-decoration: none; }
-    .logo img { width: 32px; height: 32px; border-radius: 8px; }
-    nav { display: flex; gap: 22px; margin-left: auto; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 19px; letter-spacing: .3px; color: var(--text); text-decoration: none; }
+    .logo img { width: 32px; height: 32px; border-radius: 9px; box-shadow: 0 0 22px rgba(108, 140, 255, .4); }
+    nav { display: flex; gap: 22px; margin-left: auto; align-items: center; }
     nav a { color: var(--text-2); text-decoration: none; font-size: 15px; }
     nav a:hover { color: var(--text); }
+    nav .btn { margin-left: 6px; }
 
     /* ---------- Butonlar ---------- */
     .btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-      height: 48px; padding: 0 22px; border-radius: 12px; font-weight: 600; font-size: 16px;
-      text-decoration: none; border: 1px solid var(--line); background: var(--bg-2); color: var(--text);
-      transition: background .15s, transform .15s, border-color .15s; cursor: pointer;
+      height: 50px; padding: 0 22px; border-radius: 12px; font-weight: 650; font-size: 16px;
+      text-decoration: none; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text);
+      transition: background .15s, transform .15s, border-color .15s, box-shadow .15s; cursor: pointer;
     }
-    .btn:hover { background: var(--bg-3); }
-    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 10px 30px rgba(76, 141, 255, .28); }
-    .btn.primary:hover { background: var(--accent-2); transform: translateY(-1px); }
-    .btn.sm { height: 40px; padding: 0 16px; font-size: 14.5px; border-radius: 10px; }
-    .btn small { font-weight: 400; opacity: .8; }
+    .btn:hover { background: var(--bg-3); border-color: #34433f; }
+    .btn.primary {
+      background: linear-gradient(180deg, #2ee08a, var(--accent-2)); border-color: transparent; color: #04140b;
+      box-shadow: 0 10px 34px rgba(34, 212, 126, .32), inset 0 1px 0 rgba(255, 255, 255, .35);
+    }
+    .btn.primary:hover { transform: translateY(-1px); box-shadow: 0 14px 40px rgba(34, 212, 126, .42), inset 0 1px 0 rgba(255, 255, 255, .35); }
+    .btn.sm { height: 38px; padding: 0 15px; font-size: 14px; border-radius: 10px; }
+    .btn small { font-weight: 500; opacity: .75; }
 
     /* ---------- Giriş ---------- */
-    .hero { position: relative; padding: 84px 0 40px; text-align: center; overflow: hidden; }
-    .hero::before {
-      content: ""; position: absolute; inset: -200px -20% auto; height: 700px; z-index: -1;
-      background:
-        radial-gradient(600px 320px at 30% 30%, rgba(76, 141, 255, .22), transparent 70%),
-        radial-gradient(520px 300px at 72% 20%, rgba(123, 108, 255, .2), transparent 70%);
-    }
+    .hero { position: relative; padding: 76px 0 30px; text-align: center; }
+    .glow { position: absolute; z-index: -1; border-radius: 50%; filter: blur(80px); opacity: .55; pointer-events: none; max-width: 80vw; }
+    main { overflow-x: clip; } /* parıltılar ve yüzen görsel telefonda sayfayı genişletmesin */
+    .glow.g1 { width: 520px; height: 380px; left: 8%; top: 40px; background: rgba(34, 212, 126, .35); }
+    .glow.g2 { width: 460px; height: 340px; right: 6%; top: 10px; background: rgba(47, 211, 197, .22); }
+    .glow.g3 { width: 520px; height: 300px; left: 50%; top: 620px; transform: translateX(-50%); background: rgba(155, 107, 255, .18); }
     .pill {
-      display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
-      border: 1px solid var(--line); background: var(--bg-1); color: var(--text-2); font-size: 13.5px;
+      display: inline-flex; align-items: center; gap: 10px; padding: 6px 14px 6px 10px; border-radius: 999px;
+      border: 1px solid var(--line-2); background: rgba(11, 13, 14, .8); color: var(--text-2); font-size: 13.5px;
     }
-    .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 4px rgba(53, 196, 106, .15); }
-    h1 { font-size: clamp(36px, 6vw, 64px); line-height: 1.08; letter-spacing: -1.5px; margin: 22px auto 18px; max-width: 820px; }
-    h1 span { background: linear-gradient(90deg, #6aa4ff, #a28bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-    .lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--text-2); max-width: 640px; margin: 0 auto 32px; }
+    /* konuşma göstergesi: uygulamadaki ses dalgası */
+    .eq { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; }
+    .eq i { width: 3px; border-radius: 2px; background: var(--accent); animation: eq 1.1s ease-in-out infinite; }
+    .eq i:nth-child(1) { height: 40%; animation-delay: -.2s; }
+    .eq i:nth-child(2) { height: 90%; animation-delay: -.5s; }
+    .eq i:nth-child(3) { height: 60%; animation-delay: -.8s; }
+    .eq i:nth-child(4) { height: 80%; animation-delay: -.35s; }
+    @keyframes eq { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+    .eq i { transform-origin: bottom; }
+    h1 { font-size: clamp(38px, 6.4vw, 70px); line-height: 1.05; letter-spacing: -2px; margin: 22px auto 18px; max-width: 900px; font-weight: 800; }
+    h1 .grad { background: linear-gradient(92deg, #3cf09a 10%, #2fd3c5 55%, #8fa6ff 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--text-2); max-width: 660px; margin: 0 auto 32px; }
     .cta { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
     .alt-links { margin-top: 16px; font-size: 14.5px; color: var(--text-3); }
     .alt-links a { color: var(--text-2); margin: 0 6px; }
+    .checks { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 22px; margin-top: 22px; color: var(--text-3); font-size: 14px; }
+    .checks span { display: inline-flex; align-items: center; gap: 7px; }
+    .checks svg { width: 16px; height: 16px; color: var(--accent); }
+
+    .stage { position: relative; margin: 60px auto 0; max-width: 1080px; }
     .shot {
-      margin: 56px auto 0; max-width: 1040px; border-radius: 16px; overflow: hidden;
-      border: 1px solid var(--line); box-shadow: 0 40px 120px rgba(0, 0, 0, .6), 0 0 0 1px rgba(255, 255, 255, .03);
-      background: var(--bg-1);
+      position: relative; border-radius: 18px; overflow: hidden; background: var(--bg-1);
+      border: 1px solid rgba(255, 255, 255, .07);
+      box-shadow: 0 50px 140px rgba(0, 0, 0, .75), 0 0 0 1px rgba(34, 212, 126, .08), 0 0 80px rgba(34, 212, 126, .1);
     }
-    .shot-bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-    .shot-bar i { width: 11px; height: 11px; border-radius: 50%; background: #3a3f4b; }
+    .shot-bar { display: flex; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--line); background: #08090a; }
+    .shot-bar i { width: 11px; height: 11px; border-radius: 50%; background: #2a302f; }
+    .float {
+      position: absolute; border-radius: 14px; overflow: hidden; background: var(--bg-1);
+      border: 1px solid rgba(255, 255, 255, .09); box-shadow: 0 30px 80px rgba(0, 0, 0, .7);
+    }
+    .float.room { width: 34%; right: -5%; bottom: -9%; box-shadow: 0 30px 80px rgba(0, 0, 0, .7), 0 0 60px rgba(255, 79, 163, .25); }
+    .float .cap {
+      position: absolute; left: 10px; top: 10px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: rgba(5, 6, 7, .78); border: 1px solid rgba(255, 255, 255, .1); color: var(--text);
+    }
 
     /* ---------- Bölümler ---------- */
-    section { padding: 88px 0 0; }
-    .eyebrow { color: var(--accent); font-weight: 600; font-size: 14px; letter-spacing: .6px; text-transform: uppercase; }
-    h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: -.8px; line-height: 1.15; margin: 8px 0 14px; }
-    .sub { color: var(--text-2); max-width: 680px; margin: 0 0 36px; }
+    section { padding: 110px 0 0; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--accent); font-weight: 700; font-size: 13px; letter-spacing: 1.2px; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 18px; height: 2px; border-radius: 2px; background: currentColor; }
+    h2 { font-size: clamp(30px, 4.2vw, 44px); letter-spacing: -1px; line-height: 1.12; margin: 10px 0 14px; font-weight: 800; }
+    .sub { color: var(--text-2); max-width: 680px; margin: 0 0 36px; font-size: 17px; }
+    .center { text-align: center; }
+    .center .sub { margin-left: auto; margin-right: auto; }
 
-    .features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .feature { padding: 24px; border-radius: var(--radius); background: var(--bg-1); border: 1px solid var(--line); }
-    .feature .ico {
-      width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; margin-bottom: 14px;
-      background: rgba(76, 141, 255, .12); color: #8db6ff;
+    /* ---------- Vitrin ---------- */
+    .show { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; margin-top: 90px; }
+    .show:first-of-type { margin-top: 40px; }
+    .show.flip .media { order: 2; }
+    .media { position: relative; }
+    .media .frame {
+      border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .08); background: var(--bg-1);
+      box-shadow: 0 34px 90px rgba(0, 0, 0, .6);
     }
-    .feature h3 { margin: 0 0 6px; font-size: 17px; }
-    .feature p { margin: 0; color: var(--text-2); font-size: 15px; }
+    .media::before {
+      content: ""; position: absolute; inset: 12% 8%; z-index: -1; border-radius: 50%; filter: blur(70px); opacity: .6;
+      background: var(--halo, rgba(34, 212, 126, .3));
+    }
+    .show h3 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -.6px; line-height: 1.15; margin: 10px 0 12px; }
+    .show p { color: var(--text-2); margin: 0 0 18px; }
+    .bul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .bul li { position: relative; padding-left: 30px; color: var(--text-2); }
+    .bul li::before {
+      content: ""; position: absolute; left: 0; top: 4px; width: 18px; height: 18px; border-radius: 6px;
+      background: var(--accent-soft) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2322d47e' d='M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L21.1 7.4 19.7 6z'/%3E%3C/svg%3E") center / 13px no-repeat;
+    }
+    .bul b { color: var(--text); font-weight: 600; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .chip { padding: 4px 11px; border-radius: 999px; font-size: 13px; font-weight: 600; border: 1px solid var(--line-2); background: var(--bg-1); color: var(--text-2); }
+    .chip.neon { border-color: rgba(155, 107, 255, .5); color: #c9b6ff; }
+    .chip.club { border-color: rgba(255, 79, 163, .5); color: #ff9dcb; }
+    .chip.retro { border-color: rgba(242, 179, 61, .5); color: #f6cf80; }
+
+    /* müzik kartı (kodla çizilen) */
+    .music {
+      padding: 22px; border-radius: 16px; background: linear-gradient(160deg, #0f1513, #0a0c0d); border: 1px solid rgba(255, 255, 255, .08);
+      box-shadow: 0 34px 90px rgba(0, 0, 0, .6);
+    }
+    .np { display: flex; gap: 16px; align-items: center; }
+    .cover {
+      width: 74px; height: 74px; border-radius: 12px; flex: none; position: relative; overflow: hidden;
+      background: conic-gradient(from 210deg, #22d47e, #2fd3c5, #9b6bff, #ff4fa3, #22d47e);
+    }
+    .cover::after { content: ""; position: absolute; inset: 30%; border-radius: 50%; background: #0a0c0d; box-shadow: 0 0 0 6px rgba(10, 12, 13, .4); }
+    .np b { display: block; font-size: 17px; }
+    .np small { color: var(--text-3); }
+    .bar { height: 5px; border-radius: 5px; background: var(--bg-3); margin: 18px 0 8px; overflow: hidden; }
+    .bar i { display: block; height: 100%; width: 42%; border-radius: 5px; background: linear-gradient(90deg, var(--accent), var(--teal)); animation: prog 14s linear infinite; }
+    @keyframes prog { from { width: 8%; } to { width: 96%; } }
+    .times { display: flex; justify-content: space-between; color: var(--text-3); font: 12px var(--mono); }
+    .queue { margin-top: 16px; display: grid; gap: 6px; }
+    .queue div { display: flex; justify-content: space-between; gap: 12px; padding: 9px 12px; border-radius: 10px; background: rgba(255, 255, 255, .025); color: var(--text-2); font-size: 14px; }
+    .queue div span:last-child { color: var(--text-3); font-family: var(--mono); font-size: 12.5px; }
+    .cmd { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: #050607; border: 1px solid var(--line); font: 13.5px var(--mono); color: #9ff0c4; }
+    .cmd .u { color: #f6cf80; }
+    .radios { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .radios span { padding: 4px 10px; border-radius: 8px; font-size: 12.5px; background: rgba(47, 211, 197, .08); border: 1px solid rgba(47, 211, 197, .25); color: #92ece3; }
+
+    /* telefon çerçevesi */
+    .phone-wrap { display: flex; justify-content: center; }
+    .phone {
+      width: 280px; border-radius: 42px; padding: 11px; background: linear-gradient(160deg, #1d2422, #0b0e0d);
+      border: 1px solid rgba(255, 255, 255, .1); box-shadow: 0 40px 100px rgba(0, 0, 0, .7), 0 0 70px rgba(47, 211, 197, .18);
+      position: relative;
+    }
+    .phone img { border-radius: 32px; }
+
+    /* ---------- Küçük özellikler ---------- */
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+    .mini {
+      padding: 22px; border-radius: var(--radius); background: linear-gradient(180deg, rgba(17, 21, 23, .9), rgba(11, 13, 14, .9));
+      border: 1px solid var(--line); transition: border-color .2s, transform .2s;
+    }
+    .mini:hover { border-color: rgba(34, 212, 126, .35); transform: translateY(-2px); }
+    .mini .ico { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; margin-bottom: 14px; background: var(--accent-soft); color: var(--accent); font-size: 20px; }
+    .mini h4 { margin: 0 0 6px; font-size: 16px; }
+    .mini p { margin: 0; color: var(--text-2); font-size: 14.5px; line-height: 1.55; }
+
+    /* ---------- Güven bandı ---------- */
+    .band {
+      margin-top: 110px; padding: 34px; border-radius: 22px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px;
+      background: linear-gradient(120deg, rgba(34, 212, 126, .1), rgba(47, 211, 197, .05) 50%, rgba(155, 107, 255, .08));
+      border: 1px solid rgba(34, 212, 126, .18);
+    }
+    .band div b { display: block; font-size: 26px; letter-spacing: -.5px; }
+    .band div span { color: var(--text-2); font-size: 14.5px; }
 
     /* ---------- İndir ---------- */
     .downloads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -116,10 +228,10 @@
       position: relative; padding: 26px; border-radius: var(--radius); background: var(--bg-1); border: 1px solid var(--line);
       display: flex; flex-direction: column; gap: 14px;
     }
-    .dl.rec { border-color: rgba(76, 141, 255, .55); box-shadow: 0 0 0 1px rgba(76, 141, 255, .25) inset; }
+    .dl.rec { border-color: rgba(34, 212, 126, .5); box-shadow: 0 0 0 1px rgba(34, 212, 126, .2) inset, 0 20px 60px rgba(34, 212, 126, .08); }
     .dl .tag {
-      position: absolute; top: -11px; left: 20px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600;
-      background: var(--accent); color: #fff; display: none;
+      position: absolute; top: -11px; left: 20px; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+      background: var(--accent); color: #04140b; display: none;
     }
     .dl.rec .tag { display: inline-block; }
     .dl-head { display: flex; align-items: center; gap: 12px; }
@@ -127,8 +239,8 @@
     .dl h3 { margin: 0; font-size: 19px; }
     .dl .req { color: var(--text-3); font-size: 14px; margin: 0; }
     .dl .btns { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
-    .dl .btn { width: 100%; }
-    .tip { margin-top: 18px; padding: 14px 18px; border-radius: 12px; background: var(--bg-1); border: 1px dashed var(--line); color: var(--text-2); font-size: 14.5px; }
+    .dl .btn { width: 100%; white-space: nowrap; padding: 0 14px; }
+    .tip { margin-top: 18px; padding: 14px 18px; border-radius: 12px; background: var(--bg-1); border: 1px dashed var(--line-2); color: var(--text-2); font-size: 14.5px; }
     .meta { margin-top: 12px; font-size: 13.5px; color: var(--text-3); }
 
     /* ---------- Kurulum ---------- */
@@ -144,72 +256,99 @@
     }
     .steps > li::before {
       content: counter(s); position: absolute; left: 22px; top: 20px; width: 34px; height: 34px; border-radius: 10px;
-      display: grid; place-items: center; font-weight: 700; background: rgba(76, 141, 255, .14); color: #8db6ff;
+      display: grid; place-items: center; font-weight: 800; background: var(--accent-soft); color: var(--accent);
     }
     .steps h3 { margin: 4px 0 6px; font-size: 17px; }
     .steps p { margin: 0 0 6px; color: var(--text-2); font-size: 15px; }
     .steps p:last-child { margin-bottom: 0; }
     .kbd {
-      display: inline-block; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line); border-bottom-width: 2px;
+      display: inline-block; padding: 1px 8px; border-radius: 6px; border: 1px solid var(--line-2); border-bottom-width: 2px;
       background: var(--bg-2); color: var(--text); font-size: 13.5px; font-weight: 600; white-space: nowrap;
     }
     .note { margin-top: 10px; padding: 10px 14px; border-radius: 10px; font-size: 14.5px; background: rgba(242, 179, 61, .08); border: 1px solid rgba(242, 179, 61, .25); color: #f3d08a; }
     .code {
       margin-top: 10px; display: flex; align-items: center; gap: 10px; padding: 10px 12px 10px 16px; border-radius: 10px;
-      background: #090b0e; border: 1px solid var(--line); font: 14px var(--mono); color: #cfe0ff; overflow-x: auto;
+      background: #030404; border: 1px solid var(--line); font: 14px var(--mono); color: #9ff0c4; overflow-x: auto;
     }
     .code code { flex: 1; white-space: nowrap; }
-    .copy { flex: none; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg-2); color: var(--text-2); font: 500 13px var(--font); cursor: pointer; }
+    .copy { flex: none; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line-2); background: var(--bg-2); color: var(--text-2); font: 500 13px var(--font); cursor: pointer; }
     .copy:hover { color: var(--text); background: var(--bg-3); }
 
     /* ---------- Kullanım ---------- */
     .use { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .card { padding: 26px; border-radius: var(--radius); background: var(--bg-1); border: 1px solid var(--line); }
     .card h3 { margin: 0 0 12px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
-    .card h3 svg { color: #8db6ff; }
+    .card h3 svg { color: var(--accent); }
     .card ol { margin: 0; padding-left: 20px; color: var(--text-2); }
     .card li { margin-bottom: 8px; }
     .card li b { color: var(--text); font-weight: 600; }
 
     /* ---------- SSS ---------- */
     .faq { display: grid; gap: 10px; max-width: 860px; }
-    details { border-radius: 12px; background: var(--bg-1); border: 1px solid var(--line); padding: 0 20px; }
+    details { border-radius: 12px; background: var(--bg-1); border: 1px solid var(--line); padding: 0 20px; transition: border-color .2s; }
+    details[open] { border-color: var(--line-2); }
     summary { cursor: pointer; padding: 18px 0; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
     summary::-webkit-details-marker { display: none; }
-    summary::after { content: "+"; color: var(--text-3); font-size: 22px; line-height: 1; }
+    summary::after { content: "+"; color: var(--accent); font-size: 22px; line-height: 1; }
     details[open] summary::after { content: "–"; }
     details p { margin: 0 0 18px; color: var(--text-2); }
 
-    footer { margin-top: 100px; border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--text-3); font-size: 14.5px; }
+    /* ---------- Son çağrı ---------- */
+    .final {
+      margin-top: 120px; padding: 64px 24px; border-radius: 26px; text-align: center; position: relative; overflow: hidden;
+      background: radial-gradient(600px 260px at 50% 0, rgba(34, 212, 126, .22), transparent 70%), var(--bg-1);
+      border: 1px solid rgba(34, 212, 126, .2);
+    }
+    .final img { width: 72px; height: 72px; margin: 0 auto 18px; border-radius: 18px; box-shadow: 0 0 50px rgba(108, 140, 255, .5); }
+    .final h2 { margin-top: 0; }
+
+    footer { margin-top: 90px; border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--text-3); font-size: 14.5px; }
     footer .wrap { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
-    footer a { color: var(--text-2); }
+    footer a { color: var(--text-2); text-decoration: none; }
+
+    /* kaydırınca belirme (JS yoksa ya da hareket azaltılmışsa hep görünür) */
+    .js .rv { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+    .js .rv.in { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .js .rv { opacity: 1; transform: none; transition: none; }
+      .eq i, .bar i { animation: none; }
+      html { scroll-behavior: auto; }
+    }
 
     @media (max-width: 960px) {
-      .features { grid-template-columns: 1fr 1fr; }
+      .show, .show.flip { grid-template-columns: 1fr; gap: 28px; }
+      .show.flip .media { order: 0; }
+      .grid { grid-template-columns: 1fr 1fr; }
       .downloads { grid-template-columns: 1fr; }
       .use { grid-template-columns: 1fr; }
+      .band { grid-template-columns: 1fr 1fr; }
+      .float.room { width: 42%; right: -2%; bottom: -14%; }
     }
     @media (max-width: 640px) {
-      nav a:not(:first-child) { display: none; }
-      .features { grid-template-columns: 1fr; }
-      .hero { padding-top: 56px; }
+      nav a:not(.btn) { display: none; }
+      .grid { grid-template-columns: 1fr; }
+      .hero { padding-top: 52px; }
+      .float.room { display: none; }
       .steps > li { padding-left: 22px; padding-top: 66px; }
-      .steps > li::before { top: 20px; }
       .tabs { display: flex; }
       .tab { flex: 1; justify-content: center; padding: 0 10px; }
       .cta .btn { width: 100%; }
+      section { padding-top: 84px; }
+      .band { padding: 24px; }
     }
   </style>
 </head>
 <body>
+  <script>document.documentElement.classList.add('js');</script>
   <header class="top">
     <div class="wrap">
       <a class="logo" href="#"><img src="icon.png" alt="" />Kanki</a>
       <nav>
-        <a href="#indir">İndir</a>
+        <a href="#ozellikler">Özellikler</a>
         <a href="#kurulum">Kurulum</a>
         <a href="#kullanim">Kullanım</a>
         <a href="#sss">SSS</a>
+        <a class="btn sm primary" href="#indir">İndir</a>
       </nav>
     </div>
   </header>
@@ -217,58 +356,156 @@
   <main>
     <!-- ================= GİRİŞ ================= -->
     <div class="hero">
+      <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
       <div class="wrap">
-        <span class="pill"><span class="dot"></span><span id="version-pill">Windows ve macOS için ücretsiz</span></span>
-        <h1>Arkadaşlarınla konuş, <span>ekranını paylaş.</span></h1>
-        <p class="lead">Kanki; kanal kanal sesli sohbet, yazılı mesaj ve 4K 60 FPS'e kadar ekran paylaşımı sunan, sadece bizim ekip için yapılmış bir uygulama.</p>
+        <span class="pill"><span class="eq"><i></i><i></i><i></i><i></i></span><span id="version-pill">Windows ve macOS için ücretsiz</span></span>
+        <h1>Arkadaşlarınla konuş,<br /><span class="grad">oyna, takıl.</span></h1>
+        <p class="lead">Kanki; kanal kanal sesli sohbet, 4K 60 FPS ekran paylaşımı, müzik botu ve 3D oyun odası olan, sadece bizim ekip için yapılmış bir uygulama.</p>
         <div class="cta">
           <a class="btn primary" id="hero-download" data-file="Kanki-Setup.exe">
             <svg viewBox="0 0 24 24"><path d="M3 5.5 10 4.5v7H3v-6Zm8-1.1L21 3v8.5H11V4.4ZM3 12.5h7v7L3 18.5v-6Zm8 0h10V21l-10-1.4v-7.1Z"/></svg>
-            Windows için indir <small>(.exe)</small>
+            <span>Windows için indir</span> <small>(.exe)</small>
           </a>
           <a class="btn" href="#kurulum">Kurulum adımları</a>
         </div>
         <div class="alt-links" id="hero-alt">
           Diğer sürümler:
-          <a data-file="Kanki-mac-arm64.dmg">Mac (Apple Silicon)</a>·<a data-file="Kanki-mac-x64.dmg">Mac (Intel)</a>
+          <a data-file="Kanki-mac-arm64.dmg">Mac (Apple Silicon)</a>·<a data-file="Kanki-mac-x64.dmg">Mac (Intel)</a>·<a href="#telefon">Telefondan katıl</a>
         </div>
-        <div class="shot">
-          <div class="shot-bar"><i></i><i></i><i></i></div>
-          <picture>
-            <source srcset="screenshot.webp" type="image/webp" />
-            <img src="screenshot.jpg" width="1600" height="1012" alt="Kanki ekranı: solda kanal listesi, ortada arkadaşın paylaştığı ekran, sağda kanal sohbeti" />
-          </picture>
+        <div class="checks">
+          <span><svg viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L21.1 7.4 19.7 6z"/></svg>Hesap yok, reklam yok</span>
+          <span><svg viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L21.1 7.4 19.7 6z"/></svg>Kendiliğinden güncellenir</span>
+          <span><svg viewBox="0 0 24 24"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L21.1 7.4 19.7 6z"/></svg>Ses doğrudan arkadaşına gider</span>
+        </div>
+        <div class="stage">
+          <div class="shot">
+            <div class="shot-bar"><i></i><i></i><i></i></div>
+            <picture>
+              <source srcset="app.webp" type="image/webp" />
+              <img src="app.jpg" width="1600" height="1012" alt="Kanki ekranı: solda kanal listesi, ortada arkadaşın paylaştığı ekran, sağda kanal sohbeti" />
+            </picture>
+          </div>
+          <div class="float room">
+            <span class="cap">🎮 Oyun odası</span>
+            <img src="room.webp" width="1200" height="730" alt="3D oyun odası, gece kulübü teması" loading="lazy" />
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ================= ÖZELLİKLER ================= -->
+    <!-- ================= VİTRİN ================= -->
+    <section id="ozellikler">
+      <div class="wrap">
+        <div class="center rv">
+          <div class="eyebrow">Neler var</div>
+          <h2>İhtiyacımız olan her şey, tek yerde.</h2>
+          <p class="sub">Reklam yok, hesap açmak yok, abonelik yok. Uygulamayı kur, adresi yaz, konuşmaya başla.</p>
+        </div>
+
+        <div class="show rv">
+          <div class="media" style="--halo: rgba(34, 212, 126, .3)">
+            <div class="frame"><img src="share.webp" width="1100" height="623" alt="Paylaşılan oyun ekranı, üstte CANLI rozeti, çözünürlük ve kare hızı" loading="lazy" /></div>
+          </div>
+          <div>
+            <div class="eyebrow">Ekran paylaşımı</div>
+            <h3>Oyununu net ve akıcı yayınla</h3>
+            <p>Tüm ekranı ya da tek bir pencereyi paylaş; arkadaşların tek tıkla izlesin.</p>
+            <ul class="bul">
+              <li><b>4K'ya kadar, 60 FPS</b> ve oyunun sesiyle birlikte</li>
+              <li>Oyun için <b>akıcılık</b>, yazı ve kod için <b>netlik</b> önceliği</li>
+              <li>Yayının üstüne <b>çiz ve ping at</b>, herkes aynı anda görsün</li>
+              <li>Ayrı pencerede ya da tam ekranda izle</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="show flip rv">
+          <div class="media" style="--halo: rgba(255, 79, 163, .3)">
+            <div class="frame"><img src="room.webp" width="1200" height="730" alt="3D oyun odası: koltuk, atari, langırt, TV'de yayın ve karakterler" loading="lazy" /></div>
+          </div>
+          <div>
+            <div class="eyebrow" style="color: #ff7fbf">3D oyun odası</div>
+            <h3>Kanalı bir oyun odasına çevir</h3>
+            <p>Kişi kartları yerine herkesin karakter olarak dolaştığı 3D bir oda. Konuşan, oyun oynayan, boşta olan; hepsi odada görünür.</p>
+            <ul class="bul">
+              <li><b>Kıyafetli karakterler</b>, profil fotoğrafın tişörtünde, 👕 ile karakterini seç</li>
+              <li>Yere tıkla yürü; koltuğa, atariye, langırta git; 👋 el salla, 💃 dans et</li>
+              <li>İzlenen yayın odadaki <b>TV'de</b> oynar</li>
+              <li>Herkes aynı sahneyi görür</li>
+            </ul>
+            <div class="tag-row"><span class="chip neon">Neon</span><span class="chip club">Gece kulübü</span><span class="chip retro">Retro arcade</span></div>
+          </div>
+        </div>
+
+        <div class="show rv">
+          <div class="media" style="--halo: rgba(47, 211, 197, .28)">
+            <div class="music" aria-label="Müzik botu örneği">
+              <div class="np">
+                <div class="cover"></div>
+                <div><small>Şimdi çalıyor · Lobi</small><b>Akşam listesi</b><small>Emin ekledi</small></div>
+              </div>
+              <div class="bar"><i></i></div>
+              <div class="times"><span>1:24</span><span>3:52</span></div>
+              <div class="queue">
+                <div><span>Sıradaki şarkı</span><span>3:10</span></div>
+                <div><span>Bir sonraki</span><span>4:05</span></div>
+              </div>
+              <div class="cmd"><span class="u">Deniz:</span> !çal şarkı adı</div>
+              <div class="radios"><span>📻 Türkiye'den radyolar</span><span>Dünyadan radyolar</span><span>Arama</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="eyebrow" style="color: var(--teal)">Müzik botu</div>
+            <h3>Kanala müzik aç, herkes aynı anda dinlesin</h3>
+            <p>Müzik panelinden ya da sohbetten şarkı ekle; bot kanala katılır ve çalar.</p>
+            <ul class="bul">
+              <li><b>Kuyruk</b>, geç, duraklat, karıştır, tekrarla</li>
+              <li>Sohbetten komutla: <code>!çal</code>, <code>!geç</code>, <code>!kuyruk</code></li>
+              <li><b>Radyolar:</b> Türkiye'nin ve dünyanın en çok dinlenenleri, arama ile</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="show flip rv" id="telefon">
+          <div class="media phone-wrap" style="--halo: rgba(47, 211, 197, .3)">
+            <div class="phone"><img src="phone.webp" width="750" height="1624" alt="Telefon tarayıcısında Kanki: kanal listesi ve ses bağlantısı" loading="lazy" /></div>
+          </div>
+          <div>
+            <div class="eyebrow">Telefondan katıl</div>
+            <h3>Bilgisayar başında değilsen bile kanaldasın</h3>
+            <p>Sunucu adresini telefonunun tarayıcısında aç; kurulum yok. Konuş, dinle, sohbete yaz.</p>
+            <ul class="bul">
+              <li><b>Ana ekrana ekle</b>, uygulama gibi tek dokunuşla açılsın</li>
+              <li>Hafif: ilk açılış ~0,2 MB, sonrası neredeyse hiç veri harcamaz</li>
+              <li>iPhone ve Android tarayıcılarında çalışır</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= KÜÇÜK ÖZELLİKLER ================= -->
     <section>
       <div class="wrap">
-        <div class="eyebrow">Neler var</div>
-        <h2>İhtiyacımız olan her şey, fazlası değil.</h2>
-        <p class="sub">Reklam yok, hesap açmak yok, abonelik yok. Uygulamayı kur, adresi yaz, konuşmaya başla.</p>
-        <div class="features">
-          <div class="feature">
-            <div class="ico"><svg viewBox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-6v2h3v2H8v-2h3v-2H5a2 2 0 0 1-2-2V5Zm2 0v10h14V5H5Z"/></svg></div>
-            <h3>Net ekran paylaşımı</h3>
-            <p>Tüm ekran ya da tek pencere. 4K'ya kadar çözünürlük, 60 FPS ve oyun sesiyle birlikte.</p>
-          </div>
-          <div class="feature">
-            <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 0-4 4v5a4 4 0 0 0 8 0V7a4 4 0 0 0-4-4Zm-7 9h2a5 5 0 0 0 10 0h2a7 7 0 0 1-6 6.93V21h-2v-2.07A7 7 0 0 1 5 12Z"/></svg></div>
-            <h3>Kanal kanal sohbet</h3>
-            <p>Lobi, oyun odaları, AFK. Gürültü bastırma ve oyun içinde de çalışan bas-konuş tuşu.</p>
-          </div>
-          <div class="feature">
-            <div class="ico"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg></div>
-            <h3>Düşük gecikme</h3>
-            <p>Ses ve görüntü bir sunucuya uğramadan doğrudan arkadaşlarına gider.</p>
-          </div>
-          <div class="feature">
-            <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.7 8 11 4.6-1.3 8-6 8-11V5l-8-3Zm-1 14-4-4 1.4-1.4 2.6 2.6 5.6-5.6L18 9l-7 7Z"/></svg></div>
-            <h3>Bize özel</h3>
-            <p>Sunucuyu biz kuruyoruz, kimse dinlemiyor. İstersek şifreyle kilitliyoruz.</p>
-          </div>
+        <div class="center rv">
+          <div class="eyebrow">Ve daha fazlası</div>
+          <h2>Küçük şeyler, büyük fark</h2>
+        </div>
+        <div class="grid rv">
+          <div class="mini"><div class="ico">🎙️</div><h4>Gürültü engelleme</h4><p>Yapay zekâ destekli gürültü engelleme, yankı önleme ve bas-konuş tuşu.</p></div>
+          <div class="mini"><div class="ico">📁</div><h4>Doğrudan dosya</h4><p>Dosyayı sunucuya yüklemeden doğrudan arkadaşına gönder; boyut sınırı yok.</p></div>
+          <div class="mini"><div class="ico">🖼️</div><h4>Resim ve GIF</h4><p>Resmi yapıştır ya da sürükle bırak, GIF ara, bağlantı önizlemelerini gör.</p></div>
+          <div class="mini"><div class="ico">📊</div><h4>Anket ve oylama</h4><p>Akşam ne oynanacağına kanalda anketle karar verin.</p></div>
+          <div class="mini"><div class="ico">✨</div><h4>İsim stilleri</h4><p>Adını yazı tipi, renk geçişi ve efektlerle süsle.</p></div>
+          <div class="mini"><div class="ico">📌</div><h4>Sabitleme ve arama</h4><p>Önemli mesajı sabitle, eski mesajları ara.</p></div>
+          <div class="mini"><div class="ico">📷</div><h4>Kamera</h4><p>İstersen kameranı aç, kanaldakiler görsün.</p></div>
+          <div class="mini"><div class="ico">💤</div><h4>Otomatik AFK</h4><p>Uzun süre hareketsiz ve sessiz kalan AFK kanalına geçer; yayın izleyen taşınmaz.</p></div>
+        </div>
+        <div class="band rv">
+          <div><b>4K · 60 FPS</b><span>ekran paylaşımı</span></div>
+          <div><b>Doğrudan</b><span>ses ve görüntü arkadaşına gider</span></div>
+          <div><b>0 ₺</b><span>hesap yok, reklam yok, abonelik yok</span></div>
+          <div><b>Otomatik</b><span>güncellemeler arka planda gelir</span></div>
         </div>
       </div>
     </section>
@@ -286,9 +523,9 @@
               <svg viewBox="0 0 24 24"><path d="M3 5.5 10 4.5v7H3v-6Zm8-1.1L21 3v8.5H11V4.4ZM3 12.5h7v7L3 18.5v-6Zm8 0h10V21l-10-1.4v-7.1Z"/></svg>
               <h3>Windows</h3>
             </div>
-            <p class="req">Windows 10 / 11 · 64 bit</p>
+            <p class="req">Windows 10 / 11 · 64 bit · kendiliğinden güncellenir</p>
             <div class="btns">
-              <a class="btn primary" data-file="Kanki-Setup.exe">Kanki-Setup.exe <small>(otomatik güncellenir)</small></a>
+              <a class="btn primary" data-file="Kanki-Setup.exe">Kanki-Setup.exe</a>
             </div>
           </div>
           <div class="dl" id="dl-mac-arm">
@@ -453,19 +690,28 @@
           </details>
           <details>
             <summary>Telefondan ya da Linux'tan kullanabilir miyim?</summary>
-            <p>Şimdilik hayır; Kanki Windows ve macOS için.</p>
+            <p>Evet, tarayıcıdan. Sunucu adresini telefonunun ya da bilgisayarının tarayıcısında aç (sunucuyu açan kişinin ayarlardan "Tarayıcıdan ve telefondan katılma"yı açmış olması gerekir). Konuşabilir, dinleyebilir, yazabilirsin. Telefonda ekran paylaşımı ve oyun odası yok; iPhone'da ekran kilitlenince ses kesilebilir. Uygulama gibi kullanmak için tarayıcı menüsünden <b>Ana Ekrana Ekle</b>.</p>
           </details>
         </div>
       </div>
     </section>
+    <section>
+      <div class="wrap">
+        <div class="final rv">
+          <img src="icon.png" alt="" />
+          <h2>Kanala gel, seni bekliyoruz.</h2>
+          <p class="sub">Kur, adresi yaz, konuşmaya başla. İki dakika sürer.</p>
+          <div class="cta"><a class="btn primary" href="#indir">Kanki'yi indir</a><a class="btn" href="#telefon">Telefondan katıl</a></div>
+        </div>
+      </div>
+    </section>
   </main>
-
   <footer>
     <div class="wrap">
       <span>Kanki · arkadaşlar arasında, arkadaşlar için.</span>
+      <span><a href="#indir">İndir</a> · <a href="#kurulum">Kurulum</a> · <a href="#sss">SSS</a></span>
     </div>
   </footer>
-
   <script>
     (function () {
       var REPO = 'kanki-app/kanki-app.github.io';
@@ -476,6 +722,24 @@
         a.href = BASE + a.getAttribute('data-file');
       });
 
+      // Mac'ten girene Mac sürümünü öner (Intel/Apple Silicon ayrımı tarayıcıdan güvenilir değil: Apple Silicon varsayılır)
+      if (/Macintosh|Mac OS X/.test(navigator.userAgent) && navigator.maxTouchPoints < 2) {
+        var hb = document.getElementById('hero-download');
+        hb.setAttribute('data-file', 'Kanki-mac-arm64.dmg');
+        hb.href = BASE + 'Kanki-mac-arm64.dmg';
+        hb.querySelector('svg').outerHTML = document.querySelector('#dl-mac-arm .dl-head svg').outerHTML;
+        hb.querySelector('span').textContent = 'Mac için indir';
+        hb.querySelector('small').textContent = '(Apple Silicon)';
+        document.getElementById('hero-alt').innerHTML = 'Diğer sürümler: <a href="' + BASE + 'Kanki-Setup.exe">Windows</a>·<a href="' + BASE + 'Kanki-mac-x64.dmg">Mac (Intel)</a>·<a href="#telefon">Telefondan katıl</a>';
+      }
+      // Kaydırınca bölümler belirsin
+      var rv = document.querySelectorAll('.rv');
+      if ('IntersectionObserver' in window) {
+        var io = new IntersectionObserver(function (es) {
+          es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+        }, { rootMargin: '0px 0px -8% 0px' });
+        rv.forEach(function (el) { io.observe(el); });
+      } else rv.forEach(function (el) { el.classList.add('in'); });
       // Kurulum sekmeleri (varsayılan: Windows)
       var tabs = { win: document.getElementById('tab-win'), mac: document.getElementById('tab-mac') };
       var panels = { win: document.getElementById('panel-win'), mac: document.getElementById('panel-mac') };
